@@ -17,14 +17,17 @@ namespace GorillaAlbums.Behaviours
                 if (record == null) continue;
 
                 string folder = Path.Combine(rootFolder, $"Album{i}");
-                Transform errorGO = shelf.transform.FindDeepChild("Error");
+                Transform errorGO = record.FindDeepChild("Error");
 
-                var images = Directory.GetFiles(folder, "*.*")
-                    .Where(f => f.EndsWith(".png", System.StringComparison.OrdinalIgnoreCase)
-                             || f.EndsWith(".jpg", System.StringComparison.OrdinalIgnoreCase))
-                    .ToArray();
-
-                bool hasError = images.Length == 0;
+                bool hasError = true;
+                if (Directory.Exists(folder))
+                {
+                    var images = Directory.GetFiles(folder, "*.*")
+                        .Where(f => f.EndsWith(".png", System.StringComparison.OrdinalIgnoreCase)
+                                 || f.EndsWith(".jpg", System.StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                    hasError = images.Length == 0;
+                }
 
                 if (errorGO != null)
                     errorGO.gameObject.SetActive(hasError);

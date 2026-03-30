@@ -35,11 +35,9 @@ namespace GorillaAlbums.Behaviours
                              || f.EndsWith(".jpg", System.StringComparison.OrdinalIgnoreCase))
                     .ToArray();
 
-                if (images.Length == 0) continue; 
+                if (images.Length == 0) continue;
 
-                string imagePath = images[0];
-
-                byte[] bytes = File.ReadAllBytes(imagePath);
+                byte[] bytes = File.ReadAllBytes(images[0]);
                 Texture2D tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
                 tex.LoadImage(bytes);
                 tex.Apply();

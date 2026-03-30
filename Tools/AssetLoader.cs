@@ -1,71 +1,40 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
 using System.IO;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace GorillaAlbums.Tools
 {
-    //https://github.com/developer9998/GorillaHistoricalTeleporter/blob/main/GorillaHistoricalTeleporter/Tools/AssetLoader.cs (slightly modified)
     public class AssetLoader
     {
-        private static AssetBundle loadedBundle;
-        private static readonly Dictionary<string, Object> loadedAssets = new Dictionary<string, Object>();
+        public static AssetBundle LoadedBundle { get; private set; }
 
-        private static Task bundleLoadTask;
-
-        public static async Task<T> LoadAsset<T>(string assetName) where T : Object
+        public static IEnumerator LoadBundleCoroutine()
         {
-            Object cached;
-            if (loadedAssets.TryGetValue(assetName, out cached) && cached is T)
-            {
-                return (T)cached;
-            }
-
-            if (loadedBundle == null)
-            {
-                if (bundleLoadTask == null)
-                {
-                    bundleLoadTask = LoadAssetBundle();
-                }
-                await bundleLoadTask;
-            }
-
-            var completionSource = new TaskCompletionSource<T>();
-
-            AssetBundleRequest request = loadedBundle.LoadAssetAsync<T>(assetName);
-            request.completed += _ =>
-            {
-                T result = request.asset as T;
-                completionSource.TrySetResult(result);
-            };
-
-            T loadedAsset = await completionSource.Task;
-
-            if (loadedAsset != null)
-            {
-                loadedAssets[assetName] = loadedAsset;
-            }
-
-            return loadedAsset;
-        }
-
-        private static async Task LoadAssetBundle()
-        {
-            var completionSource = new TaskCompletionSource<AssetBundle>();
+            if (LoadedBundle != null)
+                yield break;
 
             Stream stream = typeof(AssetLoader).Assembly.GetManifestResourceStream("GorillaAlbums.Content.shelves");
             if (stream == null)
             {
-                throw new FileNotFoundException("Embedded asset bundle not found. Make sure it's added as an embedded resource!!!!");
+                MelonLoader.MelonLogger.Error("[GorillaAlbums] Embedded asset bundle 'GorillaAlbums.Content.shelves' not found!");
+                yield break;
             }
 
-            AssetBundleCreateRequest request = AssetBundle.LoadFromStreamAsync(stream);
-            request.completed += _ =>
+            byte[] bundleBytes;
+            using (var ms = new System.IO.MemoryStream())
             {
-                completionSource.TrySetResult(request.assetBundle);
-            };
+                stream.CopyTo(ms);
+                bundleBytes = ms.ToArray();
+            }
+            stream.Dispose();
 
-            loadedBundle = await completionSource.Task;
+            AssetBundleCreateRequest request = AssetBundle.LoadFromMemoryAsync(bundleBytes);
+            yield return request;
+
+            LoadedBundle = request.assetBundle;
+
+            if (LoadedBundle == null)
+                MelonLoader.MelonLogger.Error("[GorillaAlbums] AssetBundle loaded but is null!");
         }
     }
 }
